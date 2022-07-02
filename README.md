@@ -4,34 +4,22 @@
 暗黑破坏神2重制版地面物品过滤器
 
 #### 软件架构
-软件架构说明
-
+d2rItemFilter.html
+cnTrans.js - 繁简翻译支持,代码来源于 http://www.fantijianti.cn/
 
 #### 安装教程
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1. 将html文件和cnTrans.js放在同一文件夹下.
+用chrome内核浏览器打开html文件,如chrome,360极速浏览器，新版edge等
 
 #### 使用说明
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
+1. 打开html,选择一个未编辑过的完整item-names.json，称之为模板
+2. 载入表格后进行屏蔽或者编辑
+3. 点击左下方生成json,复制到一个文本文件，然后命名为item-names.json，替换原mod的同名文件（v注意备份）
+4. 如果需要制作自己的吐槽版本，应当不进行任何屏蔽，保存为模板
 #### 参与贡献
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+提交bug，修改建议到ghostweo@qq.com
 
 
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
