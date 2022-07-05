@@ -287,7 +287,7 @@
                     +`<td><button onclick='openPanelEdit(${item.id},"zhTW")'>编辑</button></td>`
                     +"</tr>";
             }
-
+            //将暗黑2文本转化为一个单元内的html代码
             function D2TextToCell(text){
 
                 let strBackLine= D2BackLineFormat(text);
@@ -599,10 +599,10 @@
                 for(let code in tableColor ){
                     var color = tableColor[code];
                     $('#panelEdit #btnsColor').append(
-                        `<button class="btnColor" style="color:${color}" onclick="insertAtCur('${code}')">◉</button>`
+                        `${code+'&nbsp;'}<button class="btnColor" style="color:${color}" onclick="insertAtCur('${code}')">◉</button>`
                     );
                     btnCur++;
-                    if (btnCur % 12 ==0){
+                    if (btnCur % 6 ==0){
                         $('#panelEdit #btnsColor').append("<br/>");
                     } 
                 }
@@ -696,17 +696,15 @@
             <hr/>
             <div id="result" style="text-align: center;background-color: black;"></div>
             <hr/>
+            请在编辑框中输入颜色代码和文本，注意暗黑2中行序为倒序<br/>
             <!-- <input type="text" id="d2text" style="width: fit-content;"> -->
             <textarea id="d2text" rows="5" cols="40" ></textarea>
             <br/>
             插入颜色:
             <div id ="btnsColor">
-            
-
             </div>
             插入字符:
             <div id="btnsChar">
-
             </div>
             <hr/>
             
