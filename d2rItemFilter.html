@@ -12,7 +12,9 @@
             }
             input[type=checkbox]{
                 transform: scale(1.5);
+               
             }
+          
             .float{
                 width: fit-content;
                 height: fit-content;
@@ -35,7 +37,13 @@
         </style>
         <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js">
         </script>
+        
+    </head>
+    <title>暗黑2重制版mod物品过滤编辑</title>
+    <body style="color: white;background-color: black;">
+       
         <script>
+            var isCnTrans=false;
             /*
                 item{
                     id:num
@@ -85,7 +93,7 @@
             tableColor['ÿcT']='#8bcdff';
             tableColor['ÿcU']='#ff0000';
             //用于文本编辑时可能用到的特殊字符
-            let specChars="←↓↖↙↑↗→↘▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
+            let specChars="←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
             //全局对象，存贮json转化来的对象
             let names = [];
             //所有显示的物品keys列表，除此之外的set unique rare npc 字符串无需编辑
@@ -263,8 +271,14 @@
                 'gld':'金币'
 
             }
-            let editKey="";
-            let editLang="zhTW";
+            //编辑框上下文
+            let editCtx ={
+                id:0,
+                Key:"",
+                lang:"zhTW",
+                item:null,
+                autoTrans:true
+            }
             
             //对象转化到表格内容，如果已经屏蔽就勾选上屏蔽
             function formatItemToTableLine(item){
@@ -277,11 +291,11 @@
                 if (valuableKeys[item.Key]!=null){
                     valuable=valuableKeys[item.Key];
                 }
-                return "<tr>"
-                    +'<td><input type="checkbox"/ id="key_'+item.Key+'" '+isChecked+'/></td>'
-                    +"<td>"+D2TextToCell(item.zhTW)+"</td>"
-                    +"<td>"+D2TextToCell(item.zhCN)+"</td>"
-                    +"<td>"+D2TextToCell( item.enUS)+"</td>"
+                return '<tr id="tr_'+item.id+'">'
+                    +'<td><input type="checkbox"/ id="cb_'+item.id+'" '+isChecked+'/></td>'
+                    +"<td id='zhTW'>"+D2TextToCell(item.zhTW)+"</td>"
+                    +"<td id='zhCN'>"+D2TextToCell(item.zhCN)+"</td>"
+                    +"<td id='enUS'>"+D2TextToCell( item.enUS)+"</td>"
                     +'<td id="Key">'+D2TextToCell (item.Key)+"</td>"
                     +'<td>'+valuable+'</td>'
                     +`<td><button onclick='openPanelEdit(${item.id},"zhTW")'>编辑</button></td>`
@@ -296,12 +310,16 @@
             //将暗黑2的颜色代码转化为html标签表示的代码
             function D2ColorToFont(text){
                 let rst="";
-                let mcD2c = (""+text).match(/(ÿc[0-9;:\<\>\=@A-U]|^).[^ÿ]*(?=ÿc[0-9;:\<\>\=@A-U]|$)/g);
+                //用正则匹配一段颜色代码后跟的文本，直到下一个颜色代码或者结束前
+                let mcD2c = (""+text).match(/(ÿc[0-9;:\<\>\=\?@A-U]|^).[^ÿ]*(?=ÿc[0-9;:\<\>\=\?@A-U]|$)/g);
                 if ( mcD2c!=null){
                     mcD2c.forEach(m=>{
-                    if (/ÿc[0-9;:\<\>\=@A-U]/g.test(m)){
-                        let cd=m.match(/ÿc[0-9;:\<\>\=@A-U]/g)[0];
-                        rst+=m.replace(cd,'<font color="'+tableColor[cd]+'">')+"</font>";
+                    if (/ÿc[0-9;:\<\>\=\?@A-U]/g.test(m)){
+                        //匹配出一段中的颜色代码部分
+                        let cd=m.match(/ÿc[0-9;:\<\>\=\?@A-U]/g)[0];
+                        //将颜色代码部分替换为html标签开头，文本部分保持不变，并在最后加上标签结尾
+                        rst+=m.replace(cd,`<span style="color:${tableColor[cd]}">`)+"</span>";
+                        
                     }else{
                             rst+=m;
                         }
@@ -323,6 +341,20 @@
                 rst+=lines[0];
                 return rst;
             }
+            //根据所给的id刷新表格行
+            function refreshTableRowById(id){
+                let item =null;
+                for (let i in names){
+                    if (names[i].id == id){
+                        item = names[i];
+                        break;
+                    }
+                }
+               $(`#table #tr_${id} #zhTW`).html(D2TextToCell(item.zhTW));
+                $(`#table #tr_${id} #zhCN`).html(D2TextToCell(item.zhCN));
+                $(`#table #tr_${id} #enUS`).html(D2TextToCell(item.enUS));
+            }
+
             //根据选择的key和lang打开或者刷新编辑面板
             function openPanelEdit(id,lang){
                 let item=null;
@@ -336,6 +368,9 @@
                     alert("找不到key对应的物品");
                     return;
                 }
+                editCtx.id = id;
+                editCtx.lang = lang;
+                editCtx.item = item;
                 $('#panelEdit #Key').html(item.Key);
                 let d2text = item[lang];
 
@@ -349,9 +384,8 @@
                 let d2text = $('#panelEdit #d2text').val();
                 $('#panelEdit #result').html(D2TextToCell(d2text));
             }
-            //在光标处插入
+            //编辑框，在光标处插入
             function insertAtCur(text){
-                
                 
               let d2textDom = $('#panelEdit #d2text')[0];
               if(d2textDom.selectionStart||d2textDom.selectionStart=='0'){
@@ -370,10 +404,38 @@
               }
 
             }
+            //编辑框转繁体
+            function editTrans2Trad(){
+                let raw= $("#panelEdit #d2text").val();
+                rst =traditionalized(raw);
+                $("#panelEdit #d2text").val(rst);
+                refreshEditResult();
+
+            }
+            //编辑框转简体
+            function editTrans2Simp(){
+                let raw= $("#panelEdit #d2text").val();
+                rst =simplized(raw);
+                $("#panelEdit #d2text").val(rst);
+                refreshEditResult();
+            }
             //保存编辑结果
             function saveEdit(){
                 let d2text = $('#panelEdit #d2text').val();
-                console.log("保存 key"+editKey+" lang:"+editLang+"d2text:"+d2text);
+                
+                if (null!=editCtx.item){
+                    editCtx.item[editCtx.lang]=d2text;
+                }
+                //如果勾选了自动翻译
+                if ($('#panelEdit #autoTrans').is(':checked')){
+                    let twRaw = editCtx.item['zhTW'];
+                    editCtx.item['zhTW']=traditionalized(twRaw)
+                    let cnRaw = editCtx.item['zhCN'];
+                    editCtx.item['zhCN']=simplized(cnRaw);
+                }
+                let id = editCtx.id;
+                refreshTableRowById(id);
+                $('#panelEdit').hide();
             }
             //从文件读取完整的物品名json
             function readCompNames(files){
@@ -420,7 +482,15 @@
                             })
                             $("#lineFilter").show();            //包含过滤器的行显示
                             $("#floatBtnGenPlan").show();           //包含生成按钮的行显示
-                            setTableColor();    
+                            setTableColor();   
+                             //表格hover事件
+                            $("table tr:not(#head)").hover((evt)=>{
+                                let id = evt.currentTarget.id;
+                                $("#"+id).css("background-color","#006060");
+                            },()=>{
+                                $("#table tr:visible:even").css("background-color","#2C3539");//间隔颜色gunmetal
+                                $("#table tr:visible:odd").css("background-color","black");
+                            }) 
                         };
                         reader.readAsText(file);
                     }else{
@@ -518,6 +588,7 @@
                 $("#floatJson").show();
                 $("#standBy").show();
                 let namesCopy = JSON.parse(JSON.stringify(names));
+                //对于所有选中的项目进行屏蔽操作
                 $("table tr:not(#head)").has("input:checked").each(function(){
                     let key=$(this).children("#Key").text();
                     //console.log("banKey:"+key);
@@ -539,6 +610,7 @@
 
             
             $(document).ready(function(){
+               
                 //注册文本框过滤器
                 $("#textFilter").keyup(function(){
                     filterTable();
@@ -599,41 +671,48 @@
                 for(let code in tableColor ){
                     var color = tableColor[code];
                     $('#panelEdit #btnsColor').append(
-                        `${code+'&nbsp;'}<button class="btnColor" style="color:${color}" onclick="insertAtCur('${code}')">◉</button>`
+                        `<span style="display:inline-block;width:75px;text-align:left;">${code+'&nbsp;'}<button class="btnColor" style="color:${color};float:right;height:36px;" onclick="insertAtCur('${code}')">◉</button></span>`
                     );
                     btnCur++;
                     if (btnCur % 6 ==0){
                         $('#panelEdit #btnsColor').append("<br/>");
                     } 
                 }
+                //生成编辑框中的特殊字符按钮
                 let arrSpecChar = specChars.split("");
                 for (let i in arrSpecChar){
                     var char = arrSpecChar[i];
                     $('#panelEdit #btnsChar').append(
-                        `<button class="btnColor" style="color:white;" onclick="insertAtCur('${char}')">${char}</button>`
+                        `<span sytle="display:inline-block;width:40px;">
+                            <button class="btnColor" style="color:white;height:48px;width:48px" onclick="insertAtCur('${char}')">${char}</button>
+                        </span>`
                     );
-                    if ((+(i)+1) % 12 ==0){
+                    if ((+(i)+1) % 9 ==0){
                         $('#panelEdit #btnsChar').append("<br/>");
                     }
                 }
-
-
+                //检测cnTrans.js是否载入
+                if (!isCnTrans){
+                    alert("繁简转化代码 cnTrans.js 未成功载入，请放置该文件与编辑器同一文件夹");
+                }
                 
             }
 
             );
         </script>
-    </head>
-    <title>暗黑2重制版mod物品过滤编辑</title>
-    <body style="color: white;background-color: black;">
-        <h1>暗黑破坏神2重制版：地面物品软屏蔽编辑</h1><br/>
-        verson 0.3 2021/12/17  BY ghostweo@qq.com 
+         <script src="./cnTrans.js">
+
+        </script>
+
+        <h1>暗黑破坏神2重制版：地面物品软屏蔽编辑器</h1><br/>
+        verson 0.4 2022/07/06  BY ghostweo@qq.com 
         <hr/>
         选择模板文件：<input type="file" onchange="readCompNames(this.files)"/><br/><br/>
-        *模板文件指包含完整物品名列表，未经修改的item-names.json文件<br/>
+        *模板文件指包含完整物品名列表，未经修改的item-names.json文件<span style="color: gold;">◉许多此类mod都提供了不同版本的json文件，请阅读对应说明</span><br/>
         *以MOD <a href="http://impk.cc/ShowTopic-8572603-16.php" target="_blank" style="color: yellow;">dfcn</a>为例:默认位置为-游戏根目录\mods\dfcn\dfcn.mpq\data\local\lng\strings\开荒版不屏蔽_item-names.json<br/>
         *MOD的设置方法请参见上面的链接<br/>
-        *其他mpq文件已经封包的MOD,需要使用<a href="http://www.zezula.net/en/mpq/download.html" target="_blank" style="color: yellow;">mpqEditor</a>将mpq文件全部提取，并放入一个"mod名.mpq"的文件夹，替换同名mpq文件
+        *其他mpq文件已经封包的MOD,需要使用<a href="http://www.zezula.net/en/mpq/download.html" target="_blank" style="color: yellow;">mpqEditor</a>将mpq文件全部提取，并放入一个"mod名.mpq"的文件夹，替换同名mpq文件<br/>
+        *由于重制版程序限制，被屏蔽的物品依旧在<span style="color:red">32最大物品显示限制</span>内->即同一个屏幕上最多显示32件物品，不论屏蔽与否。重要物品请使用dfcn等mod的光柱标记<br/>
         <hr/>
         <div id="msg"></div>
 
@@ -650,7 +729,7 @@
              <input id="otherShow" type ="checkbox" checked/>显示杂物&nbsp;&nbsp;&nbsp;&nbsp;
              <input id="banShow" type ="checkbox" checked/>显示已屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
              <input id="notBanShow" type ="checkbox" checked/>显示未屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
-             条件筛选<input type="text" id="textFilter"/><br/><hr/>
+             关键字搜索<input type="text" id="textFilter"/><br/><hr/>
         </div>
         <!--表格-->
             <table id="table"></table>
@@ -675,7 +754,7 @@
             然后用记事本打开文件 [游戏根目录]\mods\dfcn\dfcn.mpq\data\local\lng\strings\item-names.json<br/>
             全选原有文本并删除，粘贴剪贴板中的json并保存文件，重启游戏应用屏蔽效果<br/>
             *其他mod请替换dfcn至对应mod名<br/>
-            *由于重制版程序限制，被屏蔽的物品依旧在<font color="red">32最大物品显示限制</font>计数内，重要物品请使用dfcn等mod的光柱标记<br/>
+           
             <hr/>
             <textarea id="jsonStr" rows="30" cols="80"></textarea><br/>
             <hr/>
@@ -685,10 +764,10 @@
             &nbsp;正在生成，请稍后...
         </div>
         <!--编辑面板-->
-        <div id="panelEdit" class="float" style="top: 20%;left:20%;height:fit-content;width:fit-content">
+        <div id="panelEdit" class="float" style="top: 20%;left:20%;max-height: 70%; width:fit-content;">
             <button onclick="$('#panelEdit').hide()">[X]</button><hr/>
             KEY:<a id="Key">KEY_NOT_FOUND</a><br/>
-            语言版本 <select id ="lang">
+            语言版本 <select id ="lang" onchange="openPanelEdit(editCtx.id,value)">
                 <option value="zhTW">繁体中文</option>
                 <option value="zhCN">简体中文</option>
                 <option value="enUS">英文</option>
@@ -698,17 +777,25 @@
             <hr/>
             请在编辑框中输入颜色代码和文本，注意暗黑2中行序为倒序<br/>
             <!-- <input type="text" id="d2text" style="width: fit-content;"> -->
-            <textarea id="d2text" rows="5" cols="40" ></textarea>
-            <br/>
+            <textarea id="d2text" rows="5" cols="60" ></textarea>
+            <hr/>
+            <button onclick="editTrans2Trad()">转化为繁体</button>
+            <button onclick="editTrans2Simp()">转化为简体</button>
+            <br/><br/>
+            繁简转化代码来源<a href="https://www.aies.cn/" target="_blank" style="color: gold;" >https://www.aies.cn/</a>
+            <hr/>
+            <div style=" max-height:400px;overflow-y:scroll;">
             插入颜色:
-            <div id ="btnsColor">
-            </div>
+            <div id ="btnsColor"></div>
+            <hr/>
             插入字符:
-            <div id="btnsChar">
+            <div id="btnsChar"></div>
             </div>
             <hr/>
-            
+            <input type="checkbox" id="autoTrans" checked/>自动进行繁简翻译<hr/>
             <button onclick="saveEdit()" style="align-self: center;">保存</button>
+           
+           
         </div>
 
         
