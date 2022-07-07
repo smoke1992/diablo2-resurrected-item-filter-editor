@@ -43,6 +43,8 @@
     <body style="color: white;background-color: black;">
        
         <script>
+
+           
             var isCnTrans=false;
             /*
                 item{
@@ -96,6 +98,8 @@
             let specChars="←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
             //全局对象，存贮json转化来的对象
             let names = [];
+            //额外上下文，用于存贮是否显示，是否屏蔽等等
+            let namesCtxs={};
             //所有显示的物品keys列表，除此之外的set unique rare npc 字符串无需编辑
             let equipKeyStr=
             //以下是基础物品类key
@@ -293,6 +297,7 @@
                 }
                 return '<tr id="tr_'+item.id+'">'
                     +'<td><input type="checkbox"/ id="cb_'+item.id+'" '+isChecked+'/></td>'
+                    +'<td id="id" >'+item.id+'</td>'
                     +"<td id='zhTW'>"+D2TextToCell(item.zhTW)+"</td>"
                     +"<td id='zhCN'>"+D2TextToCell(item.zhCN)+"</td>"
                     +"<td id='enUS'>"+D2TextToCell( item.enUS)+"</td>"
@@ -449,7 +454,7 @@
                         let reader= new FileReader();
                         reader.onload= function(){
                             $("#msg").hide();
-                            $("#table").append('<tr id="head"><th>屏蔽</th> <th>zhTW繁体中文</th> <th>zhCN简体中文</th> <th>enUS英文</th> <th>Key</th><th>价值信息</th> <th>编辑</th></tr>');
+                            $("#table").append('<tr id="head"><th>屏蔽</th><th>id</th> <th>zhTW繁体中文</th> <th>zhCN简体中文</th> <th>enUS英文</th> <th>Key</th><th>价值信息</th> <th>编辑</th></tr>');
                             //去除双斜杠注释
                             let sign= new RegExp("//.*","gm");
                             let rmSign =this.result.replace(sign,"");
@@ -471,11 +476,12 @@
                             //表格生成所有项目
                             names.forEach(item=>{
                                 $("#table").append(formatItemToTableLine(item));
-                            })
+                                namesCtxs[item.id]={
+                                    display:true,
+                                    banned:false,
+                                }
+                            });
                            
-                            
-
-                            
                             //$("#fileContent").append("<pre>"+this.result.replace("\n","<br/>")+"</pre>");
                             $(":checkbox").change(function(){   //给选择框注册刷新颜色事件
                                 setTableColor();
@@ -483,10 +489,10 @@
                             $("#lineFilter").show();            //包含过滤器的行显示
                             $("#floatBtnGenPlan").show();           //包含生成按钮的行显示
                             setTableColor();   
-                             //表格hover事件
+                             //表格hover事件，鼠标悬停在一行上后改变颜色
                             $("table tr:not(#head)").hover((evt)=>{
                                 let id = evt.currentTarget.id;
-                                $("#"+id).css("background-color","#006060");
+                                $("#"+id).css("background-color","#006060");//加深水鸭色
                             },()=>{
                                 $("#table tr:visible:even").css("background-color","#2C3539");//间隔颜色gunmetal
                                 $("#table tr:visible:odd").css("background-color","black");
@@ -531,6 +537,8 @@
                 $("#table tr:not(#head)").hide();
                 if ($("#equipShow").is(":checked")){
                     $("#table tr:not(#head)").each(function(){
+                        let id = $(this).children("id").text();
+
                         let key = $(this).children("#Key").text();
                         if (equipKeys.find(k=>k==key)){
                             $(this).show();
