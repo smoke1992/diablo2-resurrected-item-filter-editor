@@ -102,7 +102,7 @@
             let namesCtxs={};
             //所有显示的物品keys列表，除此之外的set unique rare npc 字符串无需编辑
             let equipKeyStr=
-            //以下是基础物品类key
+            //以下是基础物品类key串
              "cap;xap;uap;skp;xkp;ukp;hlm;xlm;ulm;fhl;"
             +"xhl;uhl;ghm;xhm;uhm;crn;xrn;urn;msk;xsk;"
             +"usk;bhm;xh9;uh9;ci0;ci1;ci2;ci3;qui;xui;"
@@ -153,7 +153,7 @@
             +"ob8;obd;ob4;ob9;obe;ob5;oba;obf;am1;am6;"
             +"amb;am2;am7;amc;am3;am8;amd;am4;am9;ame;"
             +"am5;ama;amf;amu;rin;jew;cm1;cm2;cm3;";
-            //杂物类key
+            //杂物类key串
             let otherKeyStr=
              "gpl;opl;gpm;opm;gps;ops;tsc;isc;vps;yps;"
             +"rvs;rvl;wms;aqv;cqv;key;gcv;gfv;"
@@ -164,6 +164,13 @@
             +"sku;skl;skz;gld;";
             let equipKeys= equipKeyStr.split(";");
             let otherKeys= otherKeyStr.split(";");
+            //三种文本类型
+            //未定义,在item-names.json中表示暗金，套装，词缀及其他
+            const ITEM_TYPE_UNDEFINED=0;
+            //装备底材
+            const ITEM_TYPE_EQUIP=1;
+            //其他杂物
+            const ITEM_TYPE_OTHER=2;
 
             //标准屏蔽加大蓝
             let planStdManaStr=
@@ -460,25 +467,22 @@
                             let rmSign =this.result.replace(sign,"");
                             //console.log(rmSign);
                             names= JSON.parse(rmSign); //讲json转化为item列表
-                            //只在表格生成装备项目
-                            // equipKeys.forEach(k=>{
-                            //     let item=names.find(i=>i.Key==k);
-                            //     if (item){
-                            //         $("#table").append(formatItemToTableLine(item));
-                            //     }
-                            // })
-                            // otherKeys.forEach(k=>{
-                            //     let item=names.find(i=>i.Key==k);
-                            //     if (item){
-                            //         $("#table").append(formatItemToTableLine(item));
-                            //     }
-                            // })
+                           
+                            
+                            
                             //表格生成所有项目
                             names.forEach(item=>{
                                 $("#table").append(formatItemToTableLine(item));
+                                let type = ITEM_TYPE_UNDEFINED;
+                                if (equipKeys.find(k=>k==item.Key)){
+                                    type = ITEM_TYPE_EQUIP;
+                                }else if (otherKeys.find(k=>k==item.Key)){
+                                    type= ITEM_TYPE_OTHER;
+                                }
                                 namesCtxs[item.id]={
                                     display:true,
                                     banned:false,
+                                    type
                                 }
                             });
                            
@@ -535,10 +539,13 @@
             function filterTable(){
                 //隐藏所有表格
                 $("#table tr:not(#head)").hide();
+                if ($("#undefindShow").isChecked){
+                    
+                }
                 if ($("#equipShow").is(":checked")){
                     $("#table tr:not(#head)").each(function(){
-                        let id = $(this).children("id").text();
-
+                        let id = +($(this).children("id").text());
+                        
                         let key = $(this).children("#Key").text();
                         if (equipKeys.find(k=>k==key)){
                             $(this).show();
@@ -732,7 +739,9 @@
                 <option value="std">标准屏蔽</option>
                 <option value="stdMana">标准屏蔽+蓝回辨箭</option>
             </select>
-            &nbsp;&nbsp;&nbsp;&nbsp;
+
+           <hr/>
+             <input id="undefinedShow" type ="checkbox">显示暗金、套装、亮金词缀等</div>&nbsp;&nbsp;&nbsp;&nbsp;
              <input id="equipShow" type ="checkbox" checked/>显示基础物品&nbsp;&nbsp;&nbsp;&nbsp;
              <input id="otherShow" type ="checkbox" checked/>显示杂物&nbsp;&nbsp;&nbsp;&nbsp;
              <input id="banShow" type ="checkbox" checked/>显示已屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
