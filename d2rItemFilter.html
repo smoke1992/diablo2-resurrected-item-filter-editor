@@ -9,10 +9,16 @@
 
         table,
         th,
+        tr {
+            border-collapse: collapse;
+            min-height: 36px;
+        }
+
         td {
             border: 1px solid white;
             border-collapse: collapse;
             text-align: center;
+
         }
 
         input[type=checkbox] {
@@ -99,6 +105,12 @@
         tableColor['ÿcS'] = '#e14848';
         tableColor['ÿcT'] = '#8bcdff';
         tableColor['ÿcU'] = '#ff0000';
+        //特殊颜色，在编辑框中靠前有额外的说明
+        let specColors = {
+            'ÿc2': '套装',
+            'ÿc4': '暗金',
+            'ÿc9': '亮金',
+        }
         //用于文本编辑时可能用到的特殊字符
         let specChars = "←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
         //全局对象，存贮json转化来的对象
@@ -320,17 +332,16 @@
         }
         //将暗黑2文本转化为一个单元内的html代码
         function D2TextToCell(text) {
-
-            let strBackLine = D2BackLineFormat(text);
-            return D2ColorToFont(strBackLine);
+            let coloredHtmlText = D2ColorToFont(text);
+            return D2BackLineFormat(coloredHtmlText);
         }
         //将暗黑2的颜色代码转化为html标签表示的代码
         function D2ColorToFont(text) {
             let rst = "";
             //用正则匹配一段颜色代码后跟的文本，直到下一个颜色代码或者结束前
-            let mcD2c = ("" + text).match(/(ÿc[0-9;:\<\>\=\?@A-U]|^).[^ÿ]*(?=ÿc[0-9;:\<\>\=\?@A-U]|$)/g);
-            if (mcD2c != null) {
-                mcD2c.forEach(m => {
+            let matchD2texts = ("" + text).match(/(ÿc[0-9;:\<\>\=\?@A-U]|^)[\s\S]*?(?=ÿc[0-9;:\<\>\=\?@A-U]|$)/g);
+            if (matchD2texts != null) {
+                matchD2texts.forEach(m => {
                     if (/ÿc[0-9;:\<\>\=\?@A-U]/g.test(m)) {
                         //匹配出一段中的颜色代码部分
                         let cd = m.match(/ÿc[0-9;:\<\>\=\?@A-U]/g)[0];
@@ -346,16 +357,39 @@
             return text;
 
         }
-        //暗黑2中文本\n换行，行序倒转
+        //暗黑2中文本\n换行，行序倒转,注意需要处理染色标签 span对之间的br
         function D2BackLineFormat(text) {
-            let lines = ("" + text).split("\n");
+            let toSplitText = '';
+            //备皮，匹配每一个span标签，或是无标签文本，并在有标签匹配中，检测其中是否有\n，如果有，那么在两侧分别加上span的结束和开始
+            let matchSpanTags = ('' + text).match(/(<span(([\s\S])*?)<\/span>)|([\s\S]+?(?=<|$))/g)
+            if (null != matchSpanTags) {
+                matchSpanTags.forEach(m => {
+                    let spanStart = m.match(/<span.*>/);
+                    if (spanStart != null) {
+                        //如果有标签
+                        if (/\n/g.test(m)) {
+                            //如果有换行符
+                            toSplitText += m.replaceAll('\n', '</span>\n' + spanStart);
+                        } else {
+                            toSplitText += m;
+                        }
+                    }
+                    else {
+                        toSplitText += m;
+                    }
+                })
+            }
+
+            let lines = ("" + toSplitText).split("\n");
             let rst = "";
+            let nextLineColorTab = "";
             if (lines.length > 1) {
                 for (let i = lines.length - 1; i > 0; i--) {
                     rst += lines[i] + "<br/>";
                 }
             };
             rst += lines[0];
+
             return rst;
         }
         //根据所给的id刷新表格行
@@ -399,7 +433,8 @@
         //刷新编辑框中的结果
         function refreshEditResult() {
             let d2text = $('#panelEdit #d2text').val();
-            $('#panelEdit #result').html(D2TextToCell(d2text));
+            let rst = D2TextToCell(d2text, true)
+            $('#panelEdit #result').html(rst);
         }
         //编辑框，在光标处插入
         function insertAtCur(text) {
@@ -443,6 +478,14 @@
             if (null != editCtx.item) {
                 editCtx.item[editCtx.lang] = d2text;
             }
+            //如果勾选了自动同步
+            if ($('#panelEdit #autoSync').is(':checked')) {
+                let activeLang = editCtx.lang;
+                if (activeLang =='zhCN'||activeLang=='zhTW'){
+                    let tarLang = activeLang=='zhTW'?'zhCN':'zhTW';
+                    editCtx.item[tarLang]= editCtx.item[activeLang];
+                }
+            }
             //如果勾选了自动翻译
             if ($('#panelEdit #autoTrans').is(':checked')) {
                 let twRaw = editCtx.item['zhTW'];
@@ -450,6 +493,7 @@
                 let cnRaw = editCtx.item['zhCN'];
                 editCtx.item['zhCN'] = simplized(cnRaw);
             }
+
             let id = editCtx.id;
             refreshTableRowById(id);
             $('#panelEdit').hide();
@@ -584,45 +628,8 @@
 
             }
             //在所有类别项目显示的基础上进行关键字过滤
-            let keyword = $("#textFilter").val();
+            let keyword = $("#keyword").val();
             $("#table tr:not(#head):visible").stop().hide().filter(":contains('" + keyword + "')").show();
-            /*
-            if ($("#equipShow").is(":checked")){
-                $("#table tr:not(#head)").each(function(){
-                    let id = +($(this).children("id").text());
-                    
-                    let key = $(this).children("#Key").text();
-                    if (equipKeys.find(k=>k==key)){
-                        $(this).show();
-                    }
-                })
-            }
-            if ($("#otherShow").is(":checked")){
-                $("#table tr:not(#head)").each(function(){
-                    let key = $(this).children("#Key").text();
-                    if (otherKeys.find(k=>k==key)){
-                        $(this).show();
-                    }
-                })
-            }
-            //如果 关闭屏蔽项目 所有表格中可见条目中已经勾选的项要隐藏 
-            if (!$("#banShow").is(":checked")){
-                $("#table tr:not(#head):visible").each(function(){
-                    if ($(this).find("input[type='checkbox']").is(":checked")){
-                        $(this).hide();
-                    }
-                })
-            }
-            if (!$("#notBanShow").is(":checked")){
-                $("#table tr:not(#head):visible").each(function(){
-                    if (!$(this).find("input[type='checkbox']").is(":checked")){
-                        $(this).hide();
-                    }
-                })
-            }
-            let fstr= $("#textFilter").val();
-            $("#table tr:not(#head):visible").stop().hide().filter(":contains('"+fstr+"')").show();
-            */
 
         }
 
@@ -633,7 +640,7 @@
             $("#table tr:visible").has("input:checked").css("background-color", "darkred");
         }
         //关键字搜索
-        function keywordSearch(){
+        function keywordSearch() {
             filterTable();
             refreshTrColor();
         }
@@ -676,8 +683,16 @@
 
 
         $(document).ready(function () {
+            //注册关键字文本框回车事件
+            $("#keyword").keyup((evt) => {
+                if (evt.keyCode == 13) {
+                    filterTable();
+                    refreshTrColor();
+                }
+            })
             $("#lineFilter").hide();
             $("#floatBtnGenPlan").hide();
+            $('#panelEdit').hide();
             //编辑框文本变更事件
             $("#panelEdit #d2text").keyup(() => {
                 refreshEditResult();
@@ -787,16 +802,16 @@
             <option value="stdMana">标准屏蔽+蓝回辨箭</option>
         </select>
         <hr />
-        <input id="undefinedShow" type="checkbox" checked />显示暗金、套装、亮金词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
+        <input id="undefinedShow" type="checkbox" checked />显示暗金、套装、词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="equipShow" type="checkbox" checked />显示基础物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="otherShow" type="checkbox" checked />显示杂物&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="banShow" type="checkbox" checked />显示已屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="notBanShow" type="checkbox" checked />显示未屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
-        <br/>
-        关键字<input type="text" id="textFilter" /> &nbsp;<button onclick="keywordSearch()">搜索</button>
+        <br /><br />
+        关键字<input type="text" id="keyword" /> &nbsp;<button onclick="keywordSearch()">搜索</button>
         <hr />
     </div>
-  
+
     <!--表格-->
     <table id="table"></table>
     <br /><br /><br /><br /><br />
@@ -860,6 +875,7 @@
         </div>
         <hr />
         <input type="checkbox" id="autoTrans" checked />自动进行繁简翻译
+        <input type="checkbox" id="autoSync" checked  />同步当前编辑内容到另一版中文
         <hr />
         <button onclick="saveEdit()" style="align-self: center;">保存</button>
 
