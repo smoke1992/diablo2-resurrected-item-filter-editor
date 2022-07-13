@@ -54,8 +54,7 @@
 <body style="color: white;background-color: black;">
 
     <script>
-
-
+        //用于cnTrans.js是否载入
         var isCnTrans = false;
         /*
             item{
@@ -189,8 +188,8 @@
         //其他杂物
         const ITEM_TYPE_OTHER = 2;
 
-        //标准屏蔽加大蓝
-        let planStdManaStr =
+        //dfcn标准屏蔽加大蓝
+        let planDfcnStdManaStr =
             "cap;skp;hlm;fhl;ghm;crn;msk;qui;lea;hla;"
             + "rng;scl;chn;brs;spl;plt;fld;gth;ful;aar;"
             + "ltp;buc;sml;lrg;kit;tow;gts;vbl;mbl;bhm;"
@@ -213,10 +212,13 @@
             + "hp2;hp3;hp4;mp1;mp2;mp3;mp4;9bl;am1;am2;"
             + "am3;am4;am5;am6;am7;am8;am9;pa1;pa2;pa3;"
             + "pa4;pa5;9b8;";
-        let strMoreBan = "tsc;isc;aqv;mp5;"   //这里是标准屏蔽比打开大蓝多屏蔽的部分，即大蓝等
-        let planStdStr = planStdManaStr + strMoreBan;
-        let planStdKeys = planStdStr.split(";");
-        let planStdManaKeys = planStdManaStr.split(";");
+        let planDfcnStdOtherStr = "tsc;isc;aqv;mp5;"   //这里是标准屏蔽比打开大蓝多屏蔽的部分，即大蓝等
+        let planDfcnStdStr = planDfcnStdManaStr + planDfcnStdOtherStr;
+        let planDfcnStdKeys = planDfcnStdStr.split(";");
+        let planDfcnStdManaKeys = planDfcnStdManaStr.split(";");
+        //wing方案
+        let planWingStr="gpl;opl;gpm;opm;gps;ops;tsc;isc;vps;rvs;wms;Key;key;hp1;hp2;hp3;hp4;mp1;mp2;mp3;mp4;";
+        let planWingKeys = planWingStr.split(";");
         //物品的价值信息
         let valuableKeys = {
             'xap': '牛魔王套', 'uap': '绿帽子', 'xkp': '岩石制动器',
@@ -300,7 +302,7 @@
 
         }
         //编辑框上下文
-        let editCtx = {
+        let editPanelCtx = {
             id: 0,
             Key: "",
             lang: "zhTW",
@@ -310,24 +312,20 @@
 
         //对象转化到表格内容，如果已经屏蔽就勾选上屏蔽
         function formatItemToTableLine(item) {
-            let isChecked = "";
-            //判断为空的简单方法
-            if (/^\s*$/g.test(item.enUS + item.zhCN + item.zhTW)) {
-                isChecked = "checked";
-            }
+  
             let valuable = '-';
             if (valuableKeys[item.Key] != null) {
                 valuable = valuableKeys[item.Key];
             }
             return '<tr id="tr_' + item.id + '">'
-                + '<td><input type="checkbox"/ id="cb_' + item.id + '" ' + isChecked + '/></td>'
+                + '<td id="ban" ><input type="checkbox"/ id="cb_' + item.id + '" /></td>'
+                + `<td id="edit"><button onclick='openPanelEdit(${item.id},"zhTW")'>编辑</button></td>`
                 + '<td id="id" >' + item.id + '</td>'
                 + "<td id='zhTW'>" + D2TextToCell(item.zhTW) + "</td>"
                 + "<td id='zhCN'>" + D2TextToCell(item.zhCN) + "</td>"
                 + "<td id='enUS'>" + D2TextToCell(item.enUS) + "</td>"
                 + '<td id="Key">' + D2TextToCell(item.Key) + "</td>"
                 + '<td>' + valuable + '</td>'
-                + `<td><button onclick='openPanelEdit(${item.id},"zhTW")'>编辑</button></td>`
                 + "</tr>";
         }
         //将暗黑2文本转化为一个单元内的html代码
@@ -419,9 +417,9 @@
                 alert("找不到key对应的物品");
                 return;
             }
-            editCtx.id = id;
-            editCtx.lang = lang;
-            editCtx.item = item;
+            editPanelCtx.id = id;
+            editPanelCtx.lang = lang;
+            editPanelCtx.item = item;
             $('#panelEdit #Key').html(item.Key);
             let d2text = item[lang];
 
@@ -475,33 +473,32 @@
         function saveEdit() {
             let d2text = $('#panelEdit #d2text').val();
 
-            if (null != editCtx.item) {
-                editCtx.item[editCtx.lang] = d2text;
+            if (null != editPanelCtx.item) {
+                editPanelCtx.item[editPanelCtx.lang] = d2text;
             }
             //如果勾选了自动同步
             if ($('#panelEdit #autoSync').is(':checked')) {
-                let activeLang = editCtx.lang;
+                let activeLang = editPanelCtx.lang;
                 if (activeLang =='zhCN'||activeLang=='zhTW'){
                     let tarLang = activeLang=='zhTW'?'zhCN':'zhTW';
-                    editCtx.item[tarLang]= editCtx.item[activeLang];
+                    editPanelCtx.item[tarLang]= editPanelCtx.item[activeLang];
                 }
             }
             //如果勾选了自动翻译
             if ($('#panelEdit #autoTrans').is(':checked')) {
-                let twRaw = editCtx.item['zhTW'];
-                editCtx.item['zhTW'] = traditionalized(twRaw)
-                let cnRaw = editCtx.item['zhCN'];
-                editCtx.item['zhCN'] = simplized(cnRaw);
+                let twRaw = editPanelCtx.item['zhTW'];
+                editPanelCtx.item['zhTW'] = traditionalized(twRaw)
+                let cnRaw = editPanelCtx.item['zhCN'];
+                editPanelCtx.item['zhCN'] = simplized(cnRaw);
             }
 
-            let id = editCtx.id;
+            let id = editPanelCtx.id;
             refreshTableRowById(id);
             $('#panelEdit').hide();
         }
         //从文件读取完整的物品名json
         function readCompNames(files) {
             $("#table").empty();
-            $("#msg").show();
             $("#lineFilter").hide();            //包含过滤器的行显示
             $("#floatBtnGen").hide();           //包含生成按钮的行显示
             if (files.length) {
@@ -509,15 +506,13 @@
                 if (/json/.test(file.type)) {
                     let reader = new FileReader();
                     reader.onload = function () {
-                        $("#msg").hide();
-                        $("#table").append('<tr id="head"><th>屏蔽</th><th>id</th> <th>zhTW繁体中文</th> <th>zhCN简体中文</th> <th>enUS英文</th> <th>Key</th><th>价值信息</th> <th>编辑</th></tr>');
+
+                        $("#table").append('<tr id="head"><th>屏蔽</th><th>编辑</th><th>id</th> <th>zhTW繁体中文</th> <th>zhCN简体中文</th> <th>enUS英文</th> <th>Key</th><th>价值信息</th> </tr>');
                         //去除双斜杠注释
                         let sign = new RegExp("//.*", "gm");
                         let rmSign = this.result.replace(sign, "");
                         //console.log(rmSign);
                         names = JSON.parse(rmSign); //讲json转化为item列表
-
-
 
                         //表格生成所有项目
                         names.forEach(item => {
@@ -535,6 +530,13 @@
                             }
                         });
 
+                      
+                        $("#toolModeSelect").show();
+                        $("#lineFilter").show();            //包含过滤器的行显示
+                        $("#floatBtnGenPlan").show();           //包含生成按钮的行显示
+                        filterTable(); 
+                        refreshTrColor();
+
                         //$("#fileContent").append("<pre>"+this.result.replace("\n","<br/>")+"</pre>");
                         $("#table tr:not(#head)").children().find('input[type="checkbox"]').change(function () {   //给选择框注册刷新颜色事件
                             let cb = $(this)[0];
@@ -542,9 +544,6 @@
                             itemCtxs[id].banned = cb.checked;
                             refreshTrColor();
                         })
-                        $("#lineFilter").show();            //包含过滤器的行显示s
-                        $("#floatBtnGenPlan").show();           //包含生成按钮的行显示
-                        refreshTrColor();
                         //表格hover事件，鼠标悬停在一行上后改变颜色
                         $("table tr:not(#head)").hover((evt) => {
                             let id = evt.currentTarget.id;
@@ -552,45 +551,114 @@
                         }, () => {
                             refreshTrColor();
                         })
+                        
+                        
                     };
                     reader.readAsText(file);
                 } else {
-                    $("#msg").text("打开错误，目标不是一个json文件")
+
+                    alert("打开错误，目标不是一个json文件")
                 }
 
             }
 
+        }
+        function loadBanPlanFromFile(files){
+       //包含生成按钮的行显示
+            if (files.length) {
+                let file = files[0];
+                if (/json/.test(file.type)) {
+                    let reader = new FileReader();
+                    reader.onload = function () {
+                         //去除双斜杠注释
+                        let sign = new RegExp("//.*", "gm");
+                        let rmSign = this.result.replace(sign, "");
+                        let  fromFileItems = JSON.parse(rmSign); //讲json转化为item列表
+                        //表格生成所有项目
+                        fromFileItems.forEach(fi => {
+                            let item= itemCtxs[fi.id];
+                            if (null!=item){
+                                //判断为空的简单方法，鉴于各mod方案的复杂性，只要有一个为空就判断为屏蔽
+                                if (/^\s*$/g.test(fi.enUS)||/^\s*$/g.test(fi.zhCN)||/^\s*$/g.test(fi.zhTW)) {
+                                    item.banned=true;
+                                    $(`#table #cb_${fi.id}`).prop("checked",true);  
+                                }
+                              
+                                                         
+                            }
+                            /* 这里是错误检查，暂时不使用
+                            else{
+                                alert("载入文件和源文件内容不符")
+                                return;
+                            }*/
+                        });
+                        filterTable();
+                        refreshTrColor();
+
+                    };
+                    reader.readAsText(file);
+                } else {
+
+                    alert("打开错误，目标不是一个json文件")
+                }
+
+            }
         }
         //载入预制方案 
         function loadBanPlan(plan) {
             $("#table tr:not(#head) input").removeAttr("checked");
             let toCheckedKeys = [];
             switch (plan) {
-                case "std":
-                    toCheckedKeys = planStdKeys;
+                case "dfcnStd":
+                    toCheckedKeys = planDfcnStdKeys;
                     break;
-                case "stdMana":
-                    toCheckedKeys = planStdManaKeys;
+                case "dfcnStdMana":
+                    toCheckedKeys = planDfcnStdManaKeys;
                     break;
+                case "wing":
+                    toCheckedKeys = planWingKeys;
                 case "none":
                 default:
                     break;
             }
             $("#table tr:not(#head)").each(function () {
                 let key = $(this).children("#Key").text();
+                let isChecked=false;
                 if (toCheckedKeys.find(k => key == k)) {
                     //console.log($(this).find("input[type='checkbox']").prop("checked"));
-                    $(this).find("input[type='checkbox']").prop("checked", true);
+                   isChecked=true;
                 }
+                $(this).find("input[type='checkbox']").prop("checked", isChecked);
             })
             refreshTrColor();
+        }
+        //获取所选择的工具模式
+        function getToolMode(){
+            return $("input[name='toolMode']:checked").val();
         }
 
         //按条件过滤表格
         function filterTable() {
+            //根据工具的模式选择隐藏显示列
+            let mode = getToolMode();
+            if ("ban"==mode){
+                $("#table td:nth-child(2)").hide(); //编辑按钮列
+                $("#table td:nth-child(1)").show(); //屏蔽勾选列
+               // $("#table td:nth-child(8)").show(); //价值信息列
+                //下面是表头
+                $("#table th:nth-child(2)").hide();
+                $("#table th:nth-child(1)").show();
+              //  $("#table th:nth-child(8)").show();
+            }else if ("edit"==mode){
+                $("#table td:nth-child(1)").hide();
+                $("#table td:nth-child(2)").show();
+               // $("#table td:nth-child(8)").hide();
+                $("#table th:nth-child(1)").hide();
+                $("#table th:nth-child(2)").show();
+               // $("#table th:nth-child(8)").hide();
+            }
             //隐藏所有表格
             $("#table tr:not(#head)").hide();
-
             for (let i in itemCtxs) {
 
                 let item = itemCtxs[i];
@@ -702,13 +770,18 @@
                     refreshTrColor();
                 }
             })
+            //隐藏一些子面板
+            $("#toolModeSelect").hide();
             $("#lineFilter").hide();
             $("#floatBtnGenPlan").hide();
             $('#panelEdit').hide();
             //编辑框文本变更事件
             $("#panelEdit #d2text").keyup(() => {
                 refreshEditResult();
-            })
+            });
+            $("input[name='toolMode']").change(()=>{
+                filterTable();
+            });
             //生成方案按钮事件
             $("#btnGenPlan").click(() => {
                 genPlan();
@@ -798,29 +871,40 @@
 
     <h1>暗黑破坏神2重制版：地面物品软屏蔽MOD编辑器</h1><br />
     verson 0.4(alpha) 2022/07/08 BY ghostweo@qq.com<br/>
-    在使用过程中遇到的bug和修改建议请发邮件，本人不频繁登录论坛
+    在使用过程中遇到的bug，或有修改建议请发邮件或者在论坛发布楼回复.
     <hr />
-    选择模板文件：<input type="file" onchange="readCompNames(this.files)" /><br /><br />
-    *模板文件指包含完整物品名列表，未经修改的item-names.json文件<span style="color: gold;">◉许多此类mod都提供了不同版本的json文件，请阅读对应说明</span><br />
-    *以MOD <a href="http://impk.cc/ShowTopic-8572603-16.php" target="_blank"
-        style="color: yellow;">dfcn</a><span style="color:skyblue;">[目前作者AFK,请帮我找个好的MOD发邮件]</span>为例:默认位置为-游戏根目录\mods\dfcn\dfcn.mpq\data\local\lng\strings\开荒版不屏蔽_item-names.json<br />
-    *MOD的设置方法请参见上面的链接<br />
-    *其他mpq文件已经封包的MOD,需要使用<a href="http://www.zezula.net/en/mpq/download.html" target="_blank"
-        style="color: yellow;">mpqEditor</a>将mpq文件全部提取，并放入一个"mod名.mpq"的文件夹，替换同名mpq文件<br />
-    *由于重制版程序限制，被屏蔽的物品依旧在<span style="color:red">32最大物品显示限制</span>内->即同一个屏幕上最多显示32件物品，不论屏蔽与否。重要物品请使用dfcn等mod的光柱标记<br />
-    <hr />
-    <div id="msg"></div>
-
     <!--说明部分-->
+    *要使用这个编辑器，首先你需要一个文本增强MOD作为<span style="color: gold;">基底.</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;推荐MOD&nbsp;<a href="https://bbs.d.163.com/forum.php?mod=viewthread&tid=174577212" target="_blank" style="color: gold;">wing</a>.<br/>
+    &nbsp;&nbsp;&nbsp;&nbsp;或者MOD&nbsp;<a href="https://bbs.d.163.com/forum.php?mod=viewthread&tid=174019384" target="_blank" style="color: gold;">will</a> 前提你会使用MPQEditor解包.<br/>
+    *MOD的设置方法请参见上面的链接<br />
+    
+   
+    *<span style="color: red;">注意:</span>由于重制版程序限制，被屏蔽的物品依旧在<span style="color: gold;">*同屏最多显示32个物品限制*</span>内->即同一个屏幕上最多显示32件物品，不论屏蔽与否.<br/>
+    也就是说<span style="color: gold;">*就算用了垃圾过滤，你也有可能错过重要物品*</span>。</br>
+    *所以重要物品请使用mod的光柱标记.同时在游戏中，同屏物品过多时尽量拾取所有金币，或是在物品堆外缘移动.<br />
+    <hr />
+    选择<span style="color:gold">物品模板文件</span>：<input type="file" onchange="readCompNames(this.files)" /><br />
+    *<span style="color:gold">物品模板文件</span>指包含完整地面物品名(不包括符文)列表，未经修改的item-names.json文件.许多此类mod都提供了不同版本的json文件，请阅读对应说明.</span><br />
+    *以MOD Wing为例:默认位置为-游戏根目录\mods\wing\wing.mpq\data\local\lng\strings\item-names.json<br />
+    <hr/>
+    <div id="toolModeSelect">
+        请选择工具的使用模式&nbsp;
+        <input name="toolMode" value="ban" type="radio" checked/>屏蔽模式
+        <input name="toolMode" value="edit" type="radio"/>编辑模式
+        <hr/>
+    </div>
     <div id="lineFilter">
         选择屏蔽方案&nbsp;
         <select id="plan">
             <option value="none">开荒不屏蔽</option>
-            <option value="std">标准屏蔽</option>
-            <option value="stdMana">标准屏蔽+蓝回辨箭</option>
+            <option value="wing">[wing]屏蔽垃圾</option>
+            <option value="dfcnStd">[dfcn]标准屏蔽</option>
+            <option value="dfcnStdMana">[dfcn]标准屏蔽+保留蓝回辨箭</option>
         </select>
+        从已经编辑的json文件载入<input type="file" onchange="loadBanPlanFromFile(this.files)"/>
         <hr />
-        <input id="undefinedShow" type="checkbox" checked />显示暗金、套装、词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
+        <input id="undefinedShow" type="checkbox"/>显示暗金、套装、词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="equipShow" type="checkbox" checked />显示基础物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="otherShow" type="checkbox" checked />显示杂物&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="banShow" type="checkbox" checked />显示已屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
@@ -868,7 +952,7 @@
         <button onclick="$('#panelEdit').hide()">[X]</button>
         <hr />
         KEY:<a id="Key">KEY_NOT_FOUND</a><br />
-        语言版本 <select id="lang" onchange="openPanelEdit(editCtx.id,value)">
+        语言版本 <select id="lang" onchange="openPanelEdit(editPanelCtx.id,value)">
             <option value="zhTW">繁体中文</option>
             <option value="zhCN">简体中文</option>
             <option value="enUS">英文</option>
