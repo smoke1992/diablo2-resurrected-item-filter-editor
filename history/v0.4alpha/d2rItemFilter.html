@@ -682,18 +682,6 @@
         }
 
 
-        //下载文本
-        function downloadText(name,text){
-            var elDownload = document.createElement('a');
-            elDownload.download=name;
-            elDownload.style.display='none';
-            elDownload.href = URL.createObjectURL(new Blob([text]));
-            document.body.appendChild(elDownload);
-            elDownload.click();
-            document.removeChild(elDownload);
-        }
-
-
         $(document).ready(function () {
             //注册关键字文本框回车事件
             $("#keyword").keyup((evt) => {
@@ -735,11 +723,6 @@
                 document.execCommand("copy");
                 alert("已复制");
             })
-            $("#floatJson #btnSave").click(()=>{
-                let jsonText = $("#jsonStr").val();
-                downloadText("测试",jsonText);
-            })
-
             $("#floatJson").hide();
             $("#standBy").hide();
             //注册所有checkbox事件
@@ -858,7 +841,6 @@
         <textarea id="jsonStr" rows="30" cols="80"></textarea><br />
         <hr />
         <button id="btnCopy" type="button">复制</button>
-        <button id="btnSave" type="button">保存</button>
     </div>
     <div id="standBy" class="float" style="top: 40%;left: 40%;">
         &nbsp;正在生成，请稍后...
