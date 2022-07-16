@@ -446,7 +446,9 @@
                         });
                         //编辑item-names文件时默认不显示uniset
                         $("#undefinedShow").prop("checked",true);
-                        if (jsonFileName=="item-names.json"){
+                        //根据内容特征判定是不是item-names.json文件
+                        //如果是就默认关闭底材外物品显示，避免表格过于庞大
+                        if (names.find(i=>i.id==1930)){
                             $("#undefinedShow").prop("checked",false);
                         }
                         $("#toolModeSelect").show();
