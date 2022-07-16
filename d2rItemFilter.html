@@ -114,6 +114,7 @@
         let specChars = "←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
         //全局对象，存贮json转化来的对象
         let names = [];
+        let jsonFileName="";
         //额外上下文，用于存贮是否显示，是否屏蔽等等
         let itemCtxs = {};
         //所有显示的物品keys列表，除此之外的set unique rare npc 字符串无需编辑
@@ -237,8 +238,8 @@
                 + "<td id='enUS'>" + D2TextToCell(item.enUS) + "</td>"
                 + '<td id="Key">' + D2TextToCell(item.Key) + "</td>"
                 + '<td>' + valuable + '</td>'
-                + `<td>${baseUni}</td>`
-                +`<td>${baseSet}</td>`
+                + `<td style='color:#d1bd7e'>${baseUni}</td>`
+                +`<td style='color:#00ff00'>${baseSet}</td>`
                 + "</tr>";
         }
         //将暗黑2文本转化为一个单元内的html代码
@@ -367,19 +368,19 @@
             }
 
         }
-        //编辑框转繁体
-        function editTrans2Trad() {
-            let raw = $("#panelEdit #d2text").val();
+        //指定id编辑框转繁体
+        function editTrans2Trad(id) {
+            let raw = $(id).val();
             rst = traditionalized(raw);
-            $("#panelEdit #d2text").val(rst);
+            $(id).val(rst);
             refreshEditResult();
 
         }
-        //编辑框转简体
-        function editTrans2Simp() {
-            let raw = $("#panelEdit #d2text").val();
+        //指定id编辑框转简体
+        function editTrans2Simp(id) {
+            let raw = $(id).val();
             rst = simplized(raw);
-            $("#panelEdit #d2text").val(rst);
+            $(id).val(rst);
             refreshEditResult();
         }
         //保存编辑结果
@@ -419,6 +420,7 @@
                 if (/json/.test(file.type)) {
                     let reader = new FileReader();
                     reader.onload = function () {
+                        jsonFileName = file.name;
 
                         $("#table").append('<tr id="head"><th>屏蔽</th><th>编辑</th><th>id</th> <th>zhTW繁体中文</th> <th>zhCN简体中文</th> <th>enUS英文</th> <th>Key</th><th>价值信息</th> <th>暗金</th><th>套装</th></tr>');
                         //去除双斜杠注释
@@ -442,8 +444,11 @@
                                 type
                             }
                         });
-
-                      
+                        //编辑item-names文件时默认不显示uniset
+                        $("#undefinedShow").prop("checked",true);
+                        if (jsonFileName=="item-names.json"){
+                            $("#undefinedShow").prop("checked",false);
+                        }
                         $("#toolModeSelect").show();
                         $("#lineFilter").show();            //包含过滤器的行显示
                         $("#floatBtnGenPlan").show();           //包含生成按钮的行显示
@@ -665,7 +670,7 @@
             elDownload.href = URL.createObjectURL(new Blob([text]));
             document.body.appendChild(elDownload);
             elDownload.click();
-            document.removeChild(elDownload);
+            document.body.removeChild(elDownload);
         }
 
 
@@ -695,10 +700,17 @@
             $("input[name='toolMode']").change(()=>{
                 filterTable();
             });
-            //生成方案按钮事件
+            //生成JSON按钮事件
             $("#btnGenPlan").click(() => {
-                genPlan();
-            })
+                //如果是屏蔽模式显示屏蔽key的列表，编辑模式直接跳过
+                let mode = getToolMode();
+                if ("ban"==mode){
+                    genPlan();
+                }else{
+                    genJson();
+                }
+                
+            });
             //拷贝方案keys按钮（已经隐藏）
             $("#floatPlan #btnCopy").click(() => {
                 let planStr = document.getElementById("planStr");
@@ -723,7 +735,7 @@
             })
             $("#floatJson #btnSave").click(()=>{
                 let jsonText = $("#jsonStr").val();
-                downloadText("测试",jsonText);
+                downloadText(jsonFileName,jsonText);
             })
 
             $("#floatJson").hide();
@@ -782,7 +794,7 @@
     <script src="./cnTrans.js"> </script>
 
     <h1>暗黑破坏神2重制版：地面物品软屏蔽MOD编辑器</h1><br />
-    verson 0.4(alpha) 2022/07/08 BY ghostweo@qq.com<br/>
+    verson 0.5 alpha 2022/07/16 BY ghostweo@qq.com<br/>
     在使用过程中遇到的bug，或有修改建议请发邮件或者在论坛发布楼回复.
     <hr />
     <!--说明部分-->
@@ -816,13 +828,15 @@
         </select>
         从已经编辑的json文件载入<input type="file" onchange="loadBanPlanFromFile(this.files)"/>
         <hr />
-        <input id="undefinedShow" type="checkbox"/>显示暗金、套装、词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
+        <input id="undefinedShow" type="checkbox" checked/>显示暗金、套装、词缀等未分类物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="equipShow" type="checkbox" checked />显示基础物品&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="otherShow" type="checkbox" checked />显示杂物&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="banShow" type="checkbox" checked />显示已屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
         <input id="notBanShow" type="checkbox" checked />显示未屏蔽&nbsp;&nbsp;&nbsp;&nbsp;
         <br /><br />
         关键字<input type="text" id="keyword" /> &nbsp;<button onclick="keywordSearch()">搜索</button>
+        &nbsp;&nbsp;<button onclick="editTrans2Trad('#keyword')">->繁</button>
+        &nbsp;&nbsp;<button onclick="editTrans2Simp('#keyword')">->简</button>
         <hr />
     </div>
 
@@ -840,15 +854,16 @@
     </div>
     <!--底部浮动确认框-->
     <div id="floatBtnGenPlan" class="float" style="bottom:0%;left: 0%;height: fit-content;width: 100%;padding: 10;">
-        &nbsp;&nbsp;&nbsp;&nbsp;<button type="button" id="btnGenPlan" style="transform: scale(1.5);">生成方案</button>
+        &nbsp;&nbsp;&nbsp;&nbsp;<button type="button" id="btnGenPlan" style="transform: scale(1.5);">生成JSON</button>
     </div>
     <!--json生成框-->
     <div id="floatJson" class="float" style="top: 15%;left: 15%;height: fit-content;width: fit-content;">
         <button onclick="$('#floatJson').hide()">[X]</button><br />
-        生成的json如下，请按[复制]按钮复制文本，或者手动alt+a alt+c复制<br />
-        然后用记事本打开文件 [游戏根目录]\mods\dfcn\dfcn.mpq\data\local\lng\strings\item-names.json<br />
-        全选原有文本并删除，粘贴剪贴板中的json并保存文件，重启游戏应用屏蔽效果<br />
-        *其他mod请替换dfcn至对应mod名<br />
+        生成的json如下，直接点击下载按钮下载到本地<br />
+        然后找到并覆盖 [游戏根目录]\mods\wing\wing.mpq\data\local\lng\strings\item-names.json<br />
+        重启游戏应用屏蔽效果<br />
+        为了防止不可测的结果，最好请备份原文件。<br/>
+        *其他mod请替换wing至对应mod名<br />
 
         <hr />
         <textarea id="jsonStr" rows="30" cols="80"></textarea><br />
@@ -860,7 +875,7 @@
         &nbsp;正在生成，请稍后...
     </div>
     <!--编辑面板-->
-    <div id="panelEdit" class="float" style="top: 20%;left:20%;max-height: 70%; width:fit-content;">
+    <div id="panelEdit" class="float" style="top: 5%;left:15%;max-height:720px; width:fit-content;overflow-y: scroll">
         <button onclick="$('#panelEdit').hide()">[X]</button>
         <hr />
         KEY:<a id="Key">KEY_NOT_FOUND</a><br />
@@ -876,12 +891,12 @@
         <!-- <input type="text" id="d2text" style="width: fit-content;"> -->
         <textarea id="d2text" rows="5" cols="60"></textarea>
         <hr />
-        <button onclick="editTrans2Trad()">转化为繁体</button>
-        <button onclick="editTrans2Simp()">转化为简体</button>
+        <button onclick="editTrans2Trad('#panelEdit #d2text')">转化为繁体</button>
+        <button onclick="editTrans2Simp('#panelEdit #d2text')">转化为简体</button>
         <br /><br />
         繁简转化代码来源<a href="https://www.aies.cn/" target="_blank" style="color: gold;">https://www.aies.cn/</a>
         <hr />
-        <div style=" max-height:400px;overflow-y:scroll;">
+        <div id="colorAndChar">
             插入颜色:
             <div id="btnsColor"></div>
             <hr />
@@ -893,8 +908,6 @@
         <input type="checkbox" id="autoSync"   />同步中文内容
         <hr />
         <button onclick="saveEdit()" style="align-self: center;">保存</button>
-
-
     </div>
 
 
