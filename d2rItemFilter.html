@@ -3,22 +3,31 @@
 <head>
 
     <style>
+        /* 载入自定义字体，需要与游戏中的字体同步,注意字体名称 */
+        /* @font-face {
+            font-family:custom-font ;
+            src: url(./customFont.ttf);
+        } */
+        /*全局使用自定义字体*/
+        /* body{
+            font-family: custom-font;
+        } */
         table {
             width: auto;
         }
-
+        
         table,
         th,
         tr {
             border-collapse: collapse;
             min-height: 36px;
         }
-
+        
         td {
+           
             border: 1px solid white;
             border-collapse: collapse;
             text-align: center;
-
         }
 
         input[type=checkbox] {
@@ -38,12 +47,16 @@
             border: white 2px solid;
         }
 
-        .btnColor {
+        /* 编辑框中插入字符按钮样式 */
+        .btnInsert {
+           
             background-color: black;
             border-color: #888888;
             padding: 8px;
             font-size: large;
         }
+        
+      
     </style>
     <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js">
     </script>
@@ -111,7 +124,8 @@
             'ÿc9': '亮金',
         }
         //用于文本编辑时可能用到的特殊字符
-        let specChars = "←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱";
+        let specChars = "←↓↖↙↑↗→↘★▢▣■▲▼●◉◆◒◓◐◑◗◖◧◨◯◬▙▛▜▟╳╲╱┢┣┤┥┦┧┨┩┪┫┬┭┮┯┰┱┲┳┴┵┶┷┸┹┺┻┼┽┾┿╀╁╂╃╄╅╆╇╈╉╊╋═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬╭╮╯╰";
+
         //全局对象，存贮json转化来的对象
         let names = [];
         let jsonFileName="";
@@ -210,7 +224,7 @@
         let baseSetKeys={};
         
        
-      
+
         //对象转化到表格内容，如果已经屏蔽就勾选上屏蔽
         function formatItemToTableLine(item) {
             let valuable = '-';
@@ -524,6 +538,24 @@
 
             }
         }
+        function loadBodyFont(files){
+            if (files.length) {
+                let file = files[0];
+
+                if (/(\.ttf)|(\.TTF)/.test(file.name)) {
+                   let url= window.URL.createObjectURL(file);
+                   let fontFace = new FontFace("custom-font",`local('custom-font'),url('${url}')`);
+                   fontFace.load().then(font=>{
+                    document.fonts.add(font);
+                    $("body").css("font-family","custom-font");
+                   });
+                } else {
+
+                    alert("打开错误，目标不是一个字体文件")
+                }
+
+            }
+        }
         //载入预制方案 
         function loadBanPlan(planVal){
             $("#table tr:not(#head) input").removeAttr("checked");
@@ -763,7 +795,7 @@
             for (let code in tableColor) {
                 var color = tableColor[code];
                 $('#panelEdit #btnsColor').append(
-                    `<span style="display:inline-block;width:75px;text-align:left;">${code + '&nbsp;'}<button class="btnColor" style="color:${color};float:right;height:36px;" onclick="insertAtCur('${code}')">◉</button></span>`
+                    `<span style="display:inline-block;width:75px;text-align:left;">${code + '&nbsp;'}<button class="btnInsert" style="color:${color};float:right;height:36px;" onclick="insertAtCur('${code}')">◉</button></span>`
                 );
                 btnCur++;
                 if (btnCur % 6 == 0) {
@@ -776,7 +808,7 @@
                 var char = arrSpecChar[i];
                 $('#panelEdit #btnsChar').append(
                     `<span sytle="display:inline-block;width:40px;">
-                            <button class="btnColor" style="color:white;height:48px;width:48px" onclick="insertAtCur('${char}')">${char}</button>
+                            ${char}<button class="btnInsert" style="color:white;height:48px;width:48px" onclick="insertAtCur('${char}')">+</button>
                         </span>`
                 );
                 if ((+(i) + 1) % 9 == 0) {
@@ -796,7 +828,7 @@
     <script src="./cnTrans.js"> </script>
 
     <h1>暗黑破坏神2重制版：地面物品软屏蔽MOD编辑器</h1><br />
-    verson 0.5 alpha 2022/07/16 BY ghostweo@qq.com  &nbsp;&nbsp;&nbsp;&nbsp;
+    verson 0.6  2022/09/02 BY ghostweo@qq.com  &nbsp;&nbsp;&nbsp;&nbsp;
     <a href="./README.txt" target="_blank" style="color: gold;">[说明]</a>
 
      <br/>
@@ -817,11 +849,14 @@
     选择<span style="color:gold">物品模板文件</span>：<input type="file" onchange="readCompNames(this.files)" /><br />
     *<span style="color:gold">物品模板文件</span>指包含完整地面物品名(不包括符文)列表，未经修改的item-names.json文件.许多此类mod都提供了不同版本的json文件，请阅读对应说明.</span><br />
     *以MOD Wing为例:默认位置为-游戏根目录\mods\wing\wing.mpq\data\local\lng\strings\item-names.json<br />
+    <br/>
+    载入mod自定义字体<input type = "file" onchange="loadBodyFont(this.files)"/>
     <hr/>
     <div id="toolModeSelect">
-        请选择工具的使用模式&nbsp;
+        <span style="color: gold;">请选择工具的使用模式&nbsp;</span>
         <input name="toolMode" value="ban" type="radio" checked/>屏蔽模式
         <input name="toolMode" value="edit" type="radio"/>编辑模式
+       
         <hr/>
     </div>
     <div id="lineFilter">
@@ -881,7 +916,7 @@
         &nbsp;正在生成，请稍后...
     </div>
     <!--编辑面板-->
-    <div id="panelEdit" class="float" style="top: 5%;left:15%;max-height:720px; width:fit-content;overflow-y: scroll">
+    <div id="panelEdit" class="float" style="top: 5%;left:15%;max-height:720px; width:fit-content;">
         <button onclick="$('#panelEdit').hide()">[X]</button>
         <hr />
         KEY:<a id="Key">KEY_NOT_FOUND</a><br />
@@ -902,7 +937,7 @@
         <br /><br />
         繁简转化代码来源<a href="https://www.aies.cn/" target="_blank" style="color: gold;">https://www.aies.cn/</a>
         <hr />
-        <div id="colorAndChar">
+        <div id="colorAndChar" style="max-height:300px;overflow-y:scroll;line-height: 40px;">
             插入颜色:
             <div id="btnsColor"></div>
             <hr />
